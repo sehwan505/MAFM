@@ -1,25 +1,26 @@
-import sqlite3
+"""SQLite 데이터베이스 모듈.
+
+파일 시스템 메타데이터를 SQLite에 저장하고 관리합니다.
+"""
+
 import os
-
-# sqlite는 서버 기반 데이터베이스가 아니다.
-# 서버 기반 데이터 베이스(MySQL, PostgreSQL)와는 다르게, 서버가 없는 내장형 데이터베이스이다.
-# 데이터베이스 파일은 하나의 독립적인 파일로 구성된다.
+import sqlite3
 
 
-def initialize_database(db_name="filesystem.db"):
-    # 기존에 db가 존재하면 날림
+def initialize_database(db_name: str = "filesystem.db") -> None:
+    """데이터베이스를 초기화합니다.
+
+    기존 데이터베이스가 존재하면 삭제하고 새로 생성합니다.
+
+    Args:
+        db_name: 데이터베이스 파일 이름.
+    """
     if os.path.exists(db_name):
         os.remove(db_name)
 
-    # 데이터베이스 파일에 연결
     connection = sqlite3.connect("filesystem.db")
-
-    # 커서 생성
-    # 커서는 SQL 문을 실행하고 결과를 처리하는 데 사용되는 객체이다.
-    # cursor.execute() 메소드를 사용해서 데이터베이스에 대한 SQL 쿼리를 실행할 수 있다.
     cursor = connection.cursor()
 
-    # 첫 번째 테이블(file_info) 생성
     cursor.execute(
         """
         CREATE TABLE IF NOT EXISTS file_info (
@@ -30,7 +31,6 @@ def initialize_database(db_name="filesystem.db"):
     """
     )
 
-    # 두 번째 테이블(directory_structure) 생성
     cursor.execute(
         """
         CREATE TABLE IF NOT EXISTS directory_structure (
@@ -42,13 +42,25 @@ def initialize_database(db_name="filesystem.db"):
     """
     )
 
-    # 변경 사항 저장
     connection.commit()
     connection.close()
 
 
-# CREATE 함수 - 데이터 삽입
-def insert_file_info(file_path, is_dir, db_name="filesystem.db"):
+def insert_file_info(
+    file_path: str,
+    is_dir: int,
+    db_name: str = "filesystem.db",
+) -> int:
+    """파일 정보를 데이터베이스에 삽입합니다.
+
+    Args:
+        file_path: 파일 또는 디렉토리의 절대 경로.
+        is_dir: 디렉토리 여부 (1: 디렉토리, 0: 파일).
+        db_name: 데이터베이스 파일 이름.
+
+    Returns:
+        삽입된 레코드의 ID.
+    """
     connection = sqlite3.connect(db_name)
     cursor = connection.cursor()
     cursor.execute(
@@ -65,7 +77,20 @@ def insert_file_info(file_path, is_dir, db_name="filesystem.db"):
     return rows[0][0]
 
 
-def insert_directory_structure(id, dir_path, parent_dir_path, db_name="filesystem.db"):
+def insert_directory_structure(
+    dir_id: int,
+    dir_path: str,
+    parent_dir_path: str,
+    db_name: str = "filesystem.db",
+) -> None:
+    """디렉토리 구조 정보를 삽입합니다.
+
+    Args:
+        dir_id: 디렉토리 ID.
+        dir_path: 디렉토리 경로.
+        parent_dir_path: 부모 디렉토리 경로.
+        db_name: 데이터베이스 파일 이름.
+    """
     connection = sqlite3.connect(db_name)
     cursor = connection.cursor()
     cursor.execute(
@@ -73,14 +98,21 @@ def insert_directory_structure(id, dir_path, parent_dir_path, db_name="filesyste
         INSERT INTO directory_structure (id, dir_path, parent_dir_path)
         VALUES (?, ?, ?)
     """,
-        (id, dir_path, parent_dir_path),
+        (dir_id, dir_path, parent_dir_path),
     )
     connection.commit()
     connection.close()
 
 
-# READ 함수 - 데이터 조회
-def get_file_info(db_name="filesystem.db"):
+def get_file_info(db_name: str = "filesystem.db") -> list[tuple]:
+    """모든 파일 정보를 조회합니다.
+
+    Args:
+        db_name: 데이터베이스 파일 이름.
+
+    Returns:
+        파일 정보 튜플 리스트.
+    """
     connection = sqlite3.connect(db_name)
     cursor = connection.cursor()
     cursor.execute("SELECT * FROM file_info")
@@ -89,41 +121,72 @@ def get_file_info(db_name="filesystem.db"):
     return rows
 
 
-def get_path_by_id(id, db_name="filesystem.db"):
+def get_path_by_id(file_id: int, db_name: str = "filesystem.db") -> str:
+    """ID로 파일 경로를 조회합니다.
+
+    Args:
+        file_id: 파일 ID.
+        db_name: 데이터베이스 파일 이름.
+
+    Returns:
+        파일 경로.
+    """
     connection = sqlite3.connect(db_name)
     cursor = connection.cursor()
-    cursor.execute("SELECT file_path FROM file_info WHERE id = ?", (id,))
+    cursor.execute("SELECT file_path FROM file_info WHERE id = ?", (file_id,))
     rows = cursor.fetchall()
     connection.close()
-    file_path = rows[0][0]
-    return file_path
+    return rows[0][0]
 
 
-def get_id_by_path(path, db_name="filesystem.db"):
+def get_id_by_path(path: str, db_name: str = "filesystem.db") -> int:
+    """경로로 파일 ID를 조회합니다.
+
+    Args:
+        path: 파일 경로.
+        db_name: 데이터베이스 파일 이름.
+
+    Returns:
+        파일 ID.
+    """
     connection = sqlite3.connect(db_name)
     cursor = connection.cursor()
     cursor.execute("SELECT id FROM file_info WHERE file_path = ?", (path,))
     rows = cursor.fetchall()
     connection.close()
-    print("rows ========", rows)
-    file_path = rows[0][0]
-    return file_path
+    print(f"rows ======== {rows}")
+    return rows[0][0]
 
 
-def get_directory_structure(db_name="filesystem.db"):
+def get_directory_structure(db_name: str = "filesystem.db") -> list[str]:
+    """모든 디렉토리 경로를 조회합니다.
+
+    Args:
+        db_name: 데이터베이스 파일 이름.
+
+    Returns:
+        디렉토리 경로 리스트.
+    """
     connection = sqlite3.connect(db_name)
     cursor = connection.cursor()
     cursor.execute("SELECT dir_path FROM directory_structure")
     rows = cursor.fetchall()
     connection.close()
-    ret_list = []
-    for row in rows:
-        ret_list.append(row[0])
-    return ret_list
+    return [row[0] for row in rows]
 
 
-# UPDATE 함수 - 데이터 수정
-def update_file_info(id, new_file_path, db_name="filesystem.db"):
+def update_file_info(
+    file_id: int,
+    new_file_path: str,
+    db_name: str = "filesystem.db",
+) -> None:
+    """파일 경로를 업데이트합니다.
+
+    Args:
+        file_id: 업데이트할 파일 ID.
+        new_file_path: 새 파일 경로.
+        db_name: 데이터베이스 파일 이름.
+    """
     connection = sqlite3.connect(db_name)
     cursor = connection.cursor()
     cursor.execute(
@@ -132,13 +195,24 @@ def update_file_info(id, new_file_path, db_name="filesystem.db"):
         SET file_path = ?
         WHERE id = ?
     """,
-        (new_file_path, id),
+        (new_file_path, file_id),
     )
     connection.commit()
     connection.close()
 
 
-def update_directory_structure(record_id, new_dir_path, db_name="filesystem.db"):
+def update_directory_structure(
+    record_id: int,
+    new_dir_path: str,
+    db_name: str = "filesystem.db",
+) -> None:
+    """디렉토리 경로를 업데이트합니다.
+
+    Args:
+        record_id: 업데이트할 레코드 ID.
+        new_dir_path: 새 디렉토리 경로.
+        db_name: 데이터베이스 파일 이름.
+    """
     connection = sqlite3.connect(db_name)
     cursor = connection.cursor()
     cursor.execute(
@@ -153,8 +227,13 @@ def update_directory_structure(record_id, new_dir_path, db_name="filesystem.db")
     connection.close()
 
 
-# DELETE 함수 - 데이터 삭제
-def delete_file_info(record_id, db_name="filesystem.db"):
+def delete_file_info(record_id: int, db_name: str = "filesystem.db") -> None:
+    """파일 정보를 삭제합니다.
+
+    Args:
+        record_id: 삭제할 레코드 ID.
+        db_name: 데이터베이스 파일 이름.
+    """
     connection = sqlite3.connect(db_name)
     cursor = connection.cursor()
     cursor.execute(
@@ -168,7 +247,18 @@ def delete_file_info(record_id, db_name="filesystem.db"):
     connection.close()
 
 
-def change_directory_path(dir_src_path, dir_dest_path, db_name="filesystem.db"):
+def change_directory_path(
+    dir_src_path: str,
+    dir_dest_path: str,
+    db_name: str = "filesystem.db",
+) -> None:
+    """디렉토리 경로를 변경합니다.
+
+    Args:
+        dir_src_path: 원본 디렉토리 경로.
+        dir_dest_path: 대상 디렉토리 경로.
+        db_name: 데이터베이스 파일 이름.
+    """
     connection = sqlite3.connect(db_name)
     cursor = connection.cursor()
     cursor.execute(
@@ -187,7 +277,6 @@ def change_directory_path(dir_src_path, dir_dest_path, db_name="filesystem.db"):
     )
     rows = cursor.fetchall()
 
-    # 각 레코드에 대해 dir_path를 업데이트합니다.
     for (file_path,) in rows:
         new_file_path = file_path.replace(dir_src_path, dir_dest_path, 1)
         cursor.execute(
@@ -202,7 +291,18 @@ def change_directory_path(dir_src_path, dir_dest_path, db_name="filesystem.db"):
     connection.close()
 
 
-def change_file_path(file_src_path, file_dest_path, db_name):
+def change_file_path(
+    file_src_path: str,
+    file_dest_path: str,
+    db_name: str,
+) -> None:
+    """파일 경로를 변경합니다.
+
+    Args:
+        file_src_path: 원본 파일 경로.
+        file_dest_path: 대상 파일 경로.
+        db_name: 데이터베이스 파일 이름.
+    """
     connection = sqlite3.connect(db_name)
     cursor = connection.cursor()
     cursor.execute(
@@ -217,11 +317,15 @@ def change_file_path(file_src_path, file_dest_path, db_name):
     connection.close()
 
 
-def delete_directory_and_subdirectories(dir_path):
+def delete_directory_and_subdirectories(dir_path: str) -> None:
+    """디렉토리와 하위 디렉토리 정보를 삭제합니다.
+
+    Args:
+        dir_path: 삭제할 디렉토리 경로.
+    """
     connection = sqlite3.connect("filesystem.db")
     cursor = connection.cursor()
 
-    # directory_structure 테이블에서 dir_path가 포함된 모든 레코드 삭제
     cursor.execute(
         """
         DELETE FROM directory_structure
@@ -230,7 +334,6 @@ def delete_directory_and_subdirectories(dir_path):
         (f"{dir_path}%",),
     )
 
-    # file_info 테이블에서 file_path가 dir_path로 시작하는 모든 레코드 삭제
     cursor.execute(
         """
         DELETE FROM file_info
@@ -239,6 +342,6 @@ def delete_directory_and_subdirectories(dir_path):
         (f"{dir_path}%",),
     )
 
-    # 변경 사항을 커밋
-    conn.commit()
+    connection.commit()
+    connection.close()
     print(f"Deleted all records related to {dir_path} and its subdirectories.")
