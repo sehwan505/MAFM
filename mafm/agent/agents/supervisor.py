@@ -1,16 +1,43 @@
+"""감독자 에이전트 모듈.
+
+디렉토리 선택을 담당하는 감독자 에이전트를 정의합니다.
+"""
+
+from typing import Any, Literal
+
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from .llm_model import api_key
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel
-from typing import List, Literal
+
+from mafm.agent.agents.llm_model import api_key
 
 
-def supervisor_agent(state, member_list: List[str]):
+def supervisor_agent(
+    state: dict[str, Any],
+    member_list: list[str],
+) -> dict[str, str]:
+    """감독자 에이전트.
+
+    사용자 요청에 따라 다음에 실행할 디렉토리를 선택합니다.
+
+    Args:
+        state: 현재 에이전트 상태 (메시지 포함).
+        member_list: 선택 가능한 디렉토리 목록.
+
+    Returns:
+        다음 노드 이름을 포함한 딕셔너리.
+    """
     llm = ChatOpenAI(api_key=api_key, model="gpt-4o-mini")
 
     next_options = member_list + ["analyst"]
 
-    class routeResponse(BaseModel):
+    class RouteResponse(BaseModel):
+        """라우팅 응답 모델.
+
+        Attributes:
+            next: 다음으로 실행할 노드 이름.
+        """
+
         next: Literal[*(next_options)]
 
     system_prompt = (
@@ -30,5 +57,5 @@ def supervisor_agent(state, member_list: List[str]):
         ]
     ).partial(members=", ".join(member_list))
 
-    supervisor_chain = prompt | llm.with_structured_output(routeResponse)
+    supervisor_chain = prompt | llm.with_structured_output(RouteResponse)
     return supervisor_chain.invoke(state)
