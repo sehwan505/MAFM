@@ -1,20 +1,9 @@
-# # Legacy
-# from typing import Annotated
-# from pydantic import BaseModel, Field
-# from langchain_core.tools import tool
-# from rag.vectorDb import search
+"""레거시 도구 모듈.
 
+이 모듈은 더 이상 사용되지 않습니다. 향후 삭제 예정입니다.
 
-# @tool("get_file_list")
-# def get_file_list(
-#     query: Annotated[str, "query"], directory_name: Annotated[str, "directory name"]
-# ) -> Annotated[list, "file_list"]:
-#     """
-#     get file list from user input
-#     """
-#     # return search(member + ".db", query)
-#     return [
-#         f"file1_{directory_name}.txt",
-#         f"file2_{directory_name}.txt",
-#         f"file3_{directory_name}.txt",
-#     ]
+Deprecated:
+    이 모듈의 기능은 member.py로 이전되었습니다.
+"""
+
+# Legacy code - 향후 삭제 예정
