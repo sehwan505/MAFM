@@ -1,31 +1,62 @@
+"""MAFM 셸 모듈.
+
+대화형 파일 관리 셸 인터페이스를 제공합니다.
+"""
+
+import argparse
 import os
 import subprocess
 import tempfile
-import time
-from rag.fileops import make_soft_links, get_file_data
-from rag.sqlite import (
-    initialize_database,
-    insert_file_info,
-    insert_directory_structure,
-)
-from rag.vectorDb import (
-    initialize_vector_db,
-    save,
-)
-from rag.embedding import initialize_model
-from agent.graph import graph
+from tempfile import TemporaryDirectory
+from typing import TYPE_CHECKING
+
+from mafm.agent.graph import graph
+from mafm.rag.embedding import initialize_model
+from mafm.rag.fileops import make_soft_links
+
+if TYPE_CHECKING:
+    from subprocess import CompletedProcess
 
 
-link_dir = None
+class ShellContext:
+    """셸 컨텍스트를 관리하는 클래스.
+
+    Attributes:
+        link_dir: 현재 활성화된 임시 링크 디렉토리.
+        root_dir: 루트 디렉토리 경로.
+    """
+
+    def __init__(self, root_dir: str) -> None:
+        """ShellContext를 초기화합니다.
+
+        Args:
+            root_dir: 루트 디렉토리 경로.
+        """
+        self.link_dir: TemporaryDirectory[str] | None = None
+        self.root_dir = root_dir
+
+    def cleanup_link_dir(self) -> None:
+        """링크 디렉토리를 정리합니다."""
+        if self.link_dir is not None:
+            self.link_dir.cleanup()
+            self.link_dir = None
 
 
-def execute_command(command, root_dir):
-    global link_dir
+def execute_command(
+    command: str,
+    context: ShellContext,
+) -> "CompletedProcess[bytes] | None":
+    """명령어를 실행합니다.
 
-    # temp_dir_path 지정
+    Args:
+        command: 실행할 명령어 문자열.
+        context: 셸 컨텍스트.
+
+    Returns:
+        명령어 실행 결과. 실패 시 None.
+    """
     temp_dir_path = os.path.join(os.getcwd(), "temp")
 
-    # temp 디렉토리가 없으면 생성
     if not os.path.exists(temp_dir_path):
         os.makedirs(temp_dir_path)
 
@@ -34,22 +65,19 @@ def execute_command(command, root_dir):
         if cmd_parts[0] == "mlink":
             if len(cmd_parts) < 2:
                 print("mlink: missing arguments. Usage: mlink <query>")
-                return
+                return None
 
             prompt = " ".join(cmd_parts[1:])
-            paths = graph(root_dir, prompt)
+            paths = graph(context.root_dir, prompt)
 
-            # 임시 디렉토리 생성
             temp_dir = tempfile.TemporaryDirectory(dir=temp_dir_path)
 
-            # 소프트 링크 생성
             result = make_soft_links(paths, temp_dir)
             print(f"Soft links created: {result}")
 
-            # 디렉토리 변경 및 링크 디렉토리 갱신
             os.chdir(temp_dir.name)
-            link_dir = temp_dir
-            return
+            context.link_dir = temp_dir
+            return None
 
         elif cmd_parts[0] == "cd":
             try:
@@ -61,39 +89,35 @@ def execute_command(command, root_dir):
                 print("cd: missing argument")
             except FileNotFoundError:
                 print(f"cd: no such file or directory: {cmd_parts[1]}")
+            return None
 
         else:
-            result = subprocess.run(cmd_parts, check=True)
-            return result
+            return subprocess.run(cmd_parts, check=True)
+
     except subprocess.CalledProcessError as e:
         print(f"Command failed: {e}")
+        return None
     except FileNotFoundError:
         print(f"Command not found: {command}")
+        return None
 
 
-def shell(root_dir: str):
-    global link_dir
+def shell(root_dir: str) -> None:
+    """대화형 셸을 시작합니다.
 
-    initialize_model()  # embedding 모델 초기화
+    Args:
+        root_dir: 루트 디렉토리 경로.
+    """
+    initialize_model()
     print("model")
 
-    # # root 위치에서부터 MAFM을 활성화
-    # # /Users 아래에 존재하는 모든 디렉토리들을 관리할 수 있으면 좋겠지만, 일단 프로토타입이기 때문에 depth를 최소화
-    # try:
-    #     # 해당 root 아래에 존재하는 모든 파일들을 탐색해서 sqlite db에 저장해야함.
-    #     # start_command_python(root_dir)
-    #     start_command_c(root_dir)
-    #     # get_file_data(root)
-    # except IndexError:
-    #     print("start: missing argument")
-    # except FileNotFoundError:
-    #     print(f"start: no such file or directory: {root_dir}")
+    context = ShellContext(root_dir)
 
     while True:
         cwd = os.getcwd()
-        if link_dir != None and not link_dir.name in cwd:
-            link_dir.cleanup()
-            link_dir = None
+        if context.link_dir is not None and context.link_dir.name not in cwd:
+            context.cleanup_link_dir()
+
         command = input(f"{cwd} $ ")
         command = command.encode("utf-8").decode("utf-8")
 
@@ -103,10 +127,8 @@ def shell(root_dir: str):
         elif command.strip() == "":
             continue
         else:
-            execute_command(command, root_dir)
+            execute_command(command, context)
 
-
-import argparse
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="MAFM shell")
