@@ -41,7 +41,9 @@ def analyst_agent(
     """
     llm = ChatOpenAI(api_key=api_key, model="gpt-4o-mini")
 
-    system_prompt = "당신은 구성원들이 답변한 파일의 경로들을 받고 정리하는 감독자입니다."
+    system_prompt = (
+        "당신은 구성원들이 답변한 파일의 경로들을 받고 정리하는 감독자입니다."
+    )
 
     prompt = ChatPromptTemplate.from_messages(
         [

@@ -52,7 +52,8 @@ def supervisor_agent(
             (
                 "system",
                 "선택할 수 있는 디렉토리는 다음과 같습니다: {members}. "
-                "디렉토리를 선택해주세요. 절대로 같은 디렉토리를 두 번 선택하지 마세요.",
+                "디렉토리를 선택해주세요. "
+                "절대로 같은 디렉토리를 두 번 선택하지 마세요.",
             ),
         ]
     ).partial(members=", ".join(member_list))

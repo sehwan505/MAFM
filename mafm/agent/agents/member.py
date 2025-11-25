@@ -11,7 +11,7 @@ from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field
 
 from mafm.agent.agents.llm_model import api_key
-from mafm.rag.vectorDb import search
+from mafm.rag.vector_db import search
 
 
 class QueryResponse(BaseModel):
@@ -68,7 +68,8 @@ def agent_node(
             (
                 "system",
                 "current directory name: {directory_name} "
-                "사용자에 요청에 따라서 디렉토리에서 파일을 검색하려고 합니다 쿼리를 문장으로 정리해주세요",
+                "사용자에 요청에 따라서 디렉토리에서 파일을 검색하려고 합니다 "
+                "쿼리를 문장으로 정리해주세요",
             ),
         ]
     ).partial(directory_name=directory_name)
