@@ -6,7 +6,7 @@ import pytest
 from pymilvus import Collection, connections, utility
 
 from mafm.rag.embedding import embedding
-from mafm.rag.vectorDb import (
+from mafm.rag.vector_db import (
     delete_vector_db,
     find_by_id,
     initialize_vector_db,
@@ -97,7 +97,7 @@ def test_search(setup_milvus: Any, mocker: Any) -> None:
         mocker: pytest-mock mocker.
     """
     mocker.patch(
-        "mafm.rag.vectorDb.get_path_by_id",
+        "mafm.rag.vector_db.get_path_by_id",
         return_value="path/to/file",
     )
 
