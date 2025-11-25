@@ -68,7 +68,7 @@ def execute_command(
                 return None
 
             prompt = " ".join(cmd_parts[1:])
-            paths = graph(context.root_dir, prompt)
+            paths = graph(prompt)
 
             temp_dir = tempfile.TemporaryDirectory(dir=temp_dir_path)
 

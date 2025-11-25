@@ -5,7 +5,8 @@ LangGraph 기반 멀티 에이전트 워크플로우를 정의합니다.
 
 import functools
 import operator
-from typing import Annotated, Any, Sequence, TypedDict
+from collections.abc import Sequence
+from typing import Annotated, Any, TypedDict
 
 from langchain_core.messages import BaseMessage, HumanMessage
 from langgraph.graph import END, START, StateGraph
@@ -26,11 +27,10 @@ class AgentState(TypedDict):
     next: str
 
 
-def graph(directory_path: str, prompt: str) -> list[str]:
+def graph(prompt: str) -> list[str]:
     """멀티 에이전트 그래프를 실행합니다.
 
     Args:
-        directory_path: 검색할 루트 디렉토리 경로.
         prompt: 사용자 검색 요청.
 
     Returns:
@@ -97,4 +97,4 @@ def graph(directory_path: str, prompt: str) -> list[str]:
 
 
 if __name__ == "__main__":
-    print(graph("", ""))
+    print(graph(""))

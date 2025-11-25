@@ -8,7 +8,10 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 DEFAULT_CHUNK_SIZE = 500
-BINARY_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".mp4", ".avi", ".mp3", ".wav", ".pdf"}
+BINARY_EXTENSIONS = {
+    ".jpg", ".jpeg", ".png", ".gif", ".bmp",
+    ".mp4", ".avi", ".mp3", ".wav", ".pdf",
+}
 
 
 def _is_binary_file(path: str) -> bool:
@@ -67,10 +70,13 @@ def get_file_data(path: str, chunk_size: int = DEFAULT_CHUNK_SIZE) -> list[str]:
         return data
 
     try:
-        with open(path, "r", encoding="utf-8", errors="ignore") as f:
+        with open(path, encoding="utf-8", errors="ignore") as f:
             content = f.read()
 
-        chunks = [content[i : i + chunk_size] for i in range(0, len(content), chunk_size)]
+        chunks = [
+            content[i : i + chunk_size]
+            for i in range(0, len(content), chunk_size)
+        ]
         data.extend(chunks)
 
     except OSError as e:

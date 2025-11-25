@@ -23,7 +23,7 @@ from mafm.rag.sqlite import (
     insert_directory_structure,
     insert_file_info,
 )
-from mafm.rag.vectorDb import (
+from mafm.rag.vector_db import (
     delete_vector_db,
     find_by_id,
     initialize_vector_db,
